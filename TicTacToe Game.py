@@ -220,7 +220,7 @@ def mossa_computer(game, player):
     else: 
         return random.choice(celle_libere)
     
-# Modalità da linea di comando (CLI)
+#linea di comando
 def run_cli():
     print("Benvenuto nel gioco Filetto (modalità CLI)!")
     try:
@@ -291,7 +291,7 @@ def run_cli():
             continue
         game.mossa(r,c)
         game.prossimo_turno()
-        
+#interfaccia grafica  
 def run_gui():
     if tk is None:
         print("Il modulo tkinter non è disponibile.")
