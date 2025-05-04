@@ -53,38 +53,60 @@ def punteggio_linea(segmenti, mappa_punteggi):
 def get_linee_board(board, dimensione):
     """
     data la mappa di gioco (board) e la sua dimensione, restituisce una lista di tutte le linee da controllare:
-    - righe, colonne, diagonali e antidiagonali
+        -righe orizzontali
+        -colonne verticali
+        -diagonali (dall'alto a sinistra verso il basso a destra)
+        -antidiagonali (dall'alto a destra verso il basso a sinistra)
     """
     linee = []
     N = dimensione
+
     #righe
     for r in range(N):
-        linee.append(board[r])
+        riga = []
+        for c in range(N):
+            riga.append(board[r][c])
+        linee.append(riga)
+
     #colonne
     for c in range(N):
-        col = [board[r][c] for r in range(N)]
-        linee.append(col)
-    #diagonali principali
+        colonna = []
+        for r in range(N):
+            colonna.append(board[r][c])
+        linee.append(colonna)
+
+    #diagonali
     for k in range(N):
-        diag1 = [board[i][i - k] for i in range(k, N)]
+        diag1 = []
+        for i in range(k, N):
+            diag1.append(board[i][i - k])
         if diag1:
-            linee.append(diag1)    
+            linee.append(diag1)
+
         if k != 0:
-            diag2 = [board[i - k][i] for i in range(k, N)]
+            diag2 = []
+            for i in range(k, N):
+                diag2.append(board[i - k][i])
             if diag2:
                 linee.append(diag2)
-    #diagonali antidiagonali
+    #antidiagonali
     for k in range(N):
-        anti1 = [board[i][N - 1 - (i - k)] for i in range(k, N)]
+        anti1 = []
+        for i in range(k, N):
+            col_index = N - 1 - (i - k)
+            anti1.append(board[i][col_index])
         if anti1:
             linee.append(anti1)
+
         if k != 0:
-            anti2 = [board[i - k][N - 1 - i] for i in range(k, N)]
+            anti2 = []
+            for i in range(k, N):
+                col_index = N - 1 - i
+                anti2.append(board[i - k][col_index])
             if anti2:
                 linee.append(anti2)
+
     return linee
-
-
 
 def calcolo_punteggio_board(board, simbolo, dimensione, mappa_punteggi):
     """
@@ -137,9 +159,9 @@ def fine_partita(game, root, bottoni, vincitore):
         
         button_exit = Button(finestra_fine, text = "No, esci",
                     command = lambda:chiudi_finestra(root, game)) 
-        button.place(x = 30, y = 50)
-        button_impostazioni.place(x = 170, y = 50)
-        button_exit.place(x = 100, y = 100)
+        button.place(x = 50, y = 50)
+        button_impostazioni.place(x = 230, y = 48)
+        button_exit.place(x = 190, y = 100)
         
         
 
@@ -163,9 +185,8 @@ def reset_partita(game, root, bottoni):
             bottoni[r][c].config(text='')
             
     print("Nuova partita avviata con le stesse impostazioni!")
-    chiudi_finestra(root)
+    chiudi_finestra(root, game)
     
-
 def restart_impostazioni(root, game):
     """
     rermina la partita attuale e avvia una nuova finestra per scegliere impostazioni diverse
@@ -186,7 +207,7 @@ def chiudi_finestra(root, game):
 
    
 class Game:
-    def __init__(self, dimensione, giocatori, mappa_punteggi=DEFAULT_MAP_PUNTEGGIO, win_threshold=70):
+    def __init__(self, dimensione, giocatori, mappa_punteggi=DEFAULT_MAP_PUNTEGGIO, win_threshold=50):
         """
         inizializza la classe gioco-game con:
           - dimensione: lato della matrice NxN
@@ -202,7 +223,7 @@ class Game:
         self.mappa_punteggi = mappa_punteggi
         self.win_threshold = win_threshold
         self.turno = 0
-        
+                
         
     def stampa_board(self):
         """
@@ -290,10 +311,19 @@ class Game:
             
         return None
     
-"""
-funzioni per il funzionamento del computer nel gioco 
-"""
-def mossa_computer(game, player):
+
+def mossa_computer(game, giocatore):
+    """
+    funzioni per il funzionamento del computer nel gioco:
+        -se non ci sono celle libere, la funzione restituisce none
+        -difficoltà facile, il computer sceglie mossa in modo casuale
+        -difficoltà difficile simula:
+            -per ciascuna cella libera, crea una copia simulata della board con la mossa ipotetica
+            -calcola il nuovo punteggio ottenuto con quella mossa
+            -confronta il guadagno rispetto al punteggio attuale
+            -sceglie la mossa che massimizza il guadagno
+            -se non trova alcuna mossa con guadagno positivo sceglie mossa casuale
+    """
     celle_libere = []
     for i in range(game.dimensione):
         for j in range(game.dimensione):
@@ -303,7 +333,7 @@ def mossa_computer(game, player):
     if len(celle_libere) == 0:
         return None
 
-    difficolta = player.get('difficolta', 'facile')
+    difficolta = giocatore.get('difficolta', 'facile')
 
     if difficolta == 'facile':
         return random.choice(celle_libere)
@@ -312,7 +342,7 @@ def mossa_computer(game, player):
         miglior_mossa = None
         miglior_guadagno = -1000
 
-        punteggio_attuale = calcolo_punteggio_board(game.board, player['simbolo'], game.dimensione, game.mappa_punteggi)
+        punteggio_attuale = calcolo_punteggio_board(game.board, giocatore['simbolo'], game.dimensione, game.mappa_punteggi)
 
         for mossa in celle_libere:
             i = mossa[0]
@@ -326,9 +356,9 @@ def mossa_computer(game, player):
                 board_simulata.append(nuova_riga)
 
 
-            board_simulata[i][j] = player['simbolo']
+            board_simulata[i][j] = giocatore['simbolo']
 
-            nuovo_punteggio = calcolo_punteggio_board(board_simulata, player['simbolo'], game.dimensione, game.mappa_punteggi)
+            nuovo_punteggio = calcolo_punteggio_board(board_simulata, giocatore['simbolo'], game.dimensione, game.mappa_punteggi)
             guadagno = nuovo_punteggio - punteggio_attuale
 
             if guadagno > miglior_guadagno:
@@ -403,6 +433,13 @@ def run_cli():
             })
 
     game = Game(dimensione, giocatori)
+    
+    if game.giocatore_corrente()['tipo'] == 'computer':
+        giocatore_corrente = game.giocatore_corrente()
+        r, c = mossa_computer(game, giocatore_corrente)
+        print(f"Il computer ({giocatore_corrente.get('difficolta', 'facile')}) ha scelto la mossa {r} {c}")
+        game.mossa(r, c)
+        game.prossimo_turno()
     
     while True: 
         game.stampa_board()
@@ -495,12 +532,14 @@ def run_gui():
         
     game = Game(dimensione, giocatori)
     root = tk.Tk()
+    root.configure(bg="#f0f0f0")
+    
     root.title("Gioco Filetto")
         
     bottoni = [[None for _ in range(dimensione)] for _ in range(dimensione)]
     label_punteggio = tk.Label(root, text="Punteggio:", font=("Helvetica", 12))
     label_punteggio.grid(row=dimensione, column=0, columnspan=dimensione, pady=10)
-        
+    
     def aggiorna_board():
         """
         aggiorna la visualizzazione della griglia e dei punteggi nel gioco, aggiorna il testo dei bottoni con i valori correnti del game board
@@ -532,27 +571,44 @@ def run_gui():
         game.prossimo_turno()
             
         if game.giocatore_corrente()['tipo'] == 'computer':
-                root.after(350, mossa_computer_gui)
+                root.after(350, lambda: mossa_computer_gui(game, root, bottoni))
     
-    def mossa_computer_gui():
+    def mossa_computer_gui(game, root, bottoni):
+        """
+        Funzione per eseguire una mossa del computer nell'interfaccia grafica
+        -esegue la mossa se possibile aggiorna il board e passa il turno
+        -se il prossimo giocatore è ancora un computer, programma la sua mossa
+        -se il primo giocatore è un computer, esegue la prima mossa dopo che l'interfaccia è stata creata
+        """
         corrente = game.giocatore_corrente()
         mossa = mossa_computer(game, corrente)
         if mossa is None:
-            messagebox.showinfo("Pareggio, tabellone pieno")
+            messagebox.showinfo("Pareggio", "Tabellone pieno")
             root.destroy()
             return 
         r, c = mossa
         game.mossa(r, c)
         aggiorna_board()
         game.prossimo_turno()
+        
+        
+        if not hasattr(game, 'partita_finita') or not game.partita_finita:
+            if game.giocatore_corrente()['tipo'] == 'computer':
+                root.after(350, lambda: mossa_computer_gui(game, root, bottoni))
     
     for i in range(dimensione):
         for j in range(dimensione):
             btn = tk.Button(root, text=game.board[i][j], width=4, height=2,
                             font=("Helvetica", 14),
+                            bg="#ffffff", activebackground="#add8e6",  
+                            fg="#000000", activeforeground="#000000",
                             command=lambda i=i, j=j: click(i, j))
             btn.grid(row=i, column=j, padx=2, pady=2)
             bottoni[i][j] = btn
+    
+    
+    if game.giocatore_corrente()['tipo'] == 'computer':
+        root.after(500, lambda: mossa_computer_gui(game, root, bottoni))
 
     root.mainloop()
               
@@ -562,8 +618,8 @@ def main():
     """
     print("----- Gioco Filetto -----")
 
-    modalita = input("Scegli modalità di gioco: (1) CLI, (2) GUI: ").strip()
-    if modalita == '2':
+    modalita = input("Scegli modalità di gioco: (1) GUI - Interfaccia grafica, (2) CLI - Riga di comando: ").strip()
+    if modalita == '1':
         run_gui()
     else:
         run_cli()
